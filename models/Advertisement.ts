@@ -1,23 +1,39 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IAdvertisement extends Document {
-  name: string;
-  placement: 'top-banner' | 'sidebar' | 'in-article' | 'between-cards' | 'footer';
-  adCode: string;
-  isActive: boolean;
+  title: string;
+  type: 'image' | 'code' | 'google-adsense';
+  placement: string;
+  provider?: string;
+  code?: string;
+  image?: string;
+  link?: string;
+  active: boolean;
+  startDate?: Date;
+  endDate?: Date;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const AdvertisementSchema = new Schema<IAdvertisement>(
   {
-    name: { type: String, required: true },
+    title: { type: String, required: true },
+    type: { 
+      type: String, 
+      enum: ['image', 'code', 'google-adsense'], 
+      default: 'image' 
+    },
     placement: {
       type: String,
-      enum: ['top-banner', 'sidebar', 'in-article', 'between-cards', 'footer'],
       required: true,
     },
-    adCode: { type: String, required: true },
-    isActive: { type: Boolean, default: true },
+    provider: { type: String },
+    code: { type: String },
+    image: { type: String },
+    link: { type: String },
+    active: { type: Boolean, default: true },
+    startDate: { type: Date },
+    endDate: { type: Date },
   },
   { timestamps: true }
 );

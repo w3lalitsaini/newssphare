@@ -25,9 +25,9 @@ export default async function BlogPage({
   const { page = '1', category, sort = 'latest' } = await searchParams;
   const currentPage = parseInt(page);
   
-  const { articles, totalPages, totalArticles } = await getLatestArticles(
+  const { articles, pages: totalPages, total: totalArticles } = await getLatestArticles(
+    12,
     currentPage, 
-    12, 
     category
   );
   

@@ -38,8 +38,18 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
     
+    // Create with the standardized fields
     const ad = await Advertisement.create({
-      title, type, placement, provider, code, image, link, active, startDate, endDate
+      title, 
+      type, 
+      placement, 
+      provider, 
+      code, 
+      image, 
+      link, 
+      active: active ?? true, 
+      startDate, 
+      endDate
     });
 
     return NextResponse.json(ad, { status: 201 });

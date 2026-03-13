@@ -44,7 +44,7 @@ export async function getCategories() {
   }
 }
 
-export async function getLatestArticles(page = 1, limit = 8, categorySlug?: string) {
+export async function getLatestArticles(limit = 8, page = 1, categorySlug?: string) {
   try {
     await connectDB();
     const skip = (page - 1) * limit;
@@ -70,12 +70,12 @@ export async function getLatestArticles(page = 1, limit = 8, categorySlug?: stri
 
     return {
       articles,
-      totalArticles: total,
-      totalPages: Math.ceil(total / limit),
+      total,
+      pages: Math.ceil(total / limit),
     };
   } catch (error) {
     console.error('Error fetching latest articles:', error);
-    return { articles: [], totalArticles: 0, totalPages: 0 };
+    return { articles: [], total: 0, pages: 0 };
   }
 }
 
