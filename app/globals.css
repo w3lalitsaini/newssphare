@@ -1,0 +1,64 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+
+  --color-brand-50: #fff1f2;
+  --color-brand-100: #ffe4e6;
+  --color-brand-500: #f43f5e;
+  --color-brand-600: #e11d48;
+  --color-brand-700: #be123c;
+  --color-brand-900: #881337;
+
+  --animate-marquee: marquee 30s linear infinite;
+  --animate-fade-in: fadeIn 0.5s ease-out;
+  --animate-slide-up: slideUp 0.4s ease-out;
+  
+  --color-scheme: light dark;
+}
+
+@keyframes marquee {
+  0%   { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { font-family: var(--font-sans); }
+}
+
+/* Prose dark mode */
+.dark .prose {
+  --tw-prose-body: rgb(209 213 219);
+  --tw-prose-headings: rgb(255 255 255);
+  --tw-prose-links: rgb(239 68 68);
+  --tw-prose-bold: rgb(255 255 255);
+  --tw-prose-code: rgb(239 68 68);
+  --tw-prose-quotes: rgb(209 213 219);
+  --tw-prose-quote-borders: rgb(239 68 68);
+  --tw-prose-captions: rgb(156 163 175);
+  --tw-prose-th-borders: rgb(55 65 81);
+  --tw-prose-td-borders: rgb(55 65 81);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+.dark ::-webkit-scrollbar-thumb { background: #374151; }
+
+/* Line clamp utilities (Tailwind v4 has these built-in) */
+.line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
