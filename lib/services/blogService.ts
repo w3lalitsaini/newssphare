@@ -5,6 +5,7 @@ import Category from "@/models/Category";
 import User from "@/models/User";
 import UsedKeyword from "@/models/UsedKeyword";
 import slugify from "slugify";
+import { uploadFromUrl } from "@/lib/services/cloudinaryService";
 
 /**
  * Persistence layer for AI-generated blog posts
@@ -60,7 +61,12 @@ export async function saveBlog(blogData: any) {
   // 3. Default Author
   let author = await User.findOne({ role: "admin" });
   if (!author) author = await User.findOne({});
-  if (!author) throw new Error("No user found to assign as author");
+  if (!author) {
+    // If absolutely no user exists, we can't save. 
+    // This usually only happens on a brand new DB without any registration.
+    console.warn("[BlogService] No users found in database. Cannot assign author.");
+    throw new Error("No user found in database to assign as author. Please register an admin user first.");
+  }
   if (!category) throw new Error("Failed to resolve category");
 
   // 4. Unique Slug
@@ -72,21 +78,27 @@ export async function saveBlog(blogData: any) {
   const plainText = content.replace(/<[^>]*>?/gm, '');
   const excerpt = plainText.slice(0, 250) + (plainText.length > 250 ? '...' : '');
 
-  // 6. Create Article (matching NewsSphare.Article schema)
+  // 6. Upload image to Cloudinary for permanent hosting
+  let activeImageUrl = featured_image;
+  if (activeImageUrl) {
+    activeImageUrl = await uploadFromUrl(activeImageUrl, `newsphere/articles/${finalSlug}`);
+  }
+
+  // 7. Create Article (matching NewsSphare.Article schema)
   const article = await Article.create({
     title: topic,
     slug: finalSlug,
     excerpt: excerpt,
     content: content,
-    featuredImage: featured_image || "https://picsum.photos/seed/" + finalSlug + "/1200/630",
+    featuredImage: activeImageUrl || "https://picsum.photos/seed/" + finalSlug + "/1200/630",
     featuredImageAlt: topic,
     author: author._id,
     category: category._id,
     tags: tagIds,
     status: "published", 
     publishedAt: new Date(),
-    isFeatured: false,
-    isTrending: false,
+    isFeatured: true, // Make AI articles featured to ensure visibility
+    isTrending: true, // Also set trending for testing visibility
     views: Math.floor(Math.random() * 50),
     readingTime: Math.max(1, Math.ceil(plainText.split(/\s+/).length / 200)),
     metaTitle: topic.slice(0, 60),

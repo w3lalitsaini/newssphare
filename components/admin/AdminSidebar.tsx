@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, FileText, FolderOpen, Tag, Users,
-  MessageSquare, Megaphone, Settings, Globe, ChevronRight, Cpu
+  MessageSquare, Megaphone, Settings, Globe, ChevronRight, Cpu, Plus
 } from 'lucide-react';
 
 const navItems = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Articles', href: '/admin/articles', icon: FileText },
+  { label: 'Write Article', href: '/admin/articles/new', icon: Plus },
   { label: 'Blog Factory', href: '/admin/ai', icon: Cpu },
   { label: 'Categories', href: '/admin/categories', icon: FolderOpen },
   { label: 'Tags', href: '/admin/tags', icon: Tag },

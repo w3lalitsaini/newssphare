@@ -1,4 +1,7 @@
 import { Metadata } from 'next';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Fragment } from 'react';
@@ -28,8 +31,6 @@ export function generateStaticParams() {
   return CATEGORIES.map((cat) => ({ slug: cat.slug }));
 }
 
-export const revalidate = 60;
-
 export default async function CategoryPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const { page: pageStr } = await searchParams;
@@ -40,26 +41,8 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const page = Number(pageStr) || 1;
   const perPage = 12;
 
-  // Get real category and articles
-  let articles: any[] = [];
-  let total = 0;
-  try {
-    await connectDB();
-    const category = await Category.findOne({ slug }).lean() as any;
-    if (category) {
-      const skip = (page - 1) * perPage;
-      [articles, total] = await Promise.all([
-        Article.find({ status: 'published', category: category._id })
-          .populate('author', 'name image')
-          .populate('category', 'name slug color')
-          .sort({ publishedAt: -1 })
-          .skip(skip)
-          .limit(perPage)
-          .lean(),
-        Article.countDocuments({ status: 'published', category: category._id }),
-      ]);
-    }
-  } catch {}
+  // Get real category and articles using centralized data fetcher
+  const { articles, total } = await getArticlesByCategory(slug, perPage, page);
 
   const totalPages = Math.ceil(total / perPage);
 

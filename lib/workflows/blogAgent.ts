@@ -72,7 +72,7 @@ export async function runBlogAgent(keyword: string, options: { useCache?: boolea
        await setCache(cacheKey, result);
     }
 
-    if (autoSave && !fallback_used) {
+    if (autoSave) {
        try {
          const saved = await saveBlog(result);
          await logInfo('BlogAgent', `[Auto-Published] ID: ${saved._id}`);

@@ -3,31 +3,36 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  Save, Eye, Upload, X, Plus, Loader2, ChevronLeft, 
-  Image as ImageIcon, Hash, Layout, Type, FileText, Search
+  Save, X, Image as ImageIcon, Tag, Layout, 
+  Type, AlignLeft, Globe, Eye, Loader2, Sparkles,
+  ChevronLeft
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+
+interface ICategory {
+  _id: string;
+  name: string;
+}
 
 export default function NewArticlePage() {
   const router = useRouter();
-  const [title, setTitle] = useState('');
-  const [slug, setSlug] = useState('');
-  const [excerpt, setExcerpt] = useState('');
-  const [content, setContent] = useState('');
-  const [category, setCategory] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
-  const [status, setStatus] = useState<'draft' | 'published'>('draft');
-  const [isFeatured, setIsFeatured] = useState(false);
-  const [isTrending, setIsTrending] = useState(false);
-  const [featuredImage, setFeaturedImage] = useState('');
-  const [metaTitle, setMetaTitle] = useState('');
-  const [metaDesc, setMetaDesc] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<ICategory[]>([]);
   
-  const [categories, setCategories] = useState<any[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    content: '',
+    excerpt: '',
+    category: '',
+    tags: '',
+    featuredImage: '',
+    status: 'draft',
+    isFeatured: false,
+    isTrending: false,
+    metaTitle: '',
+    metaDescription: '',
+  });
 
   useEffect(() => {
     fetchCategories();
@@ -36,288 +41,268 @@ export default function NewArticlePage() {
   const fetchCategories = async () => {
     try {
       const res = await fetch('/api/admin/categories');
-      const data = await res.json();
-      setCategories(data);
+      if (res.ok) {
+        const data = await res.json();
+        setCategories(data);
+        if (data.length > 0) {
+            setFormData(prev => ({ ...prev, category: data[0]._id }));
+        }
+      }
     } catch (error) {
       toast.error('Failed to load categories');
     }
   };
 
-  const autoSlug = (t: string) =>
-    t.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
-
-  const addTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
-      setTagInput('');
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target as HTMLInputElement;
+    const checked = (e.target as HTMLInputElement).checked;
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
     try {
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setFeaturedImage(data.url);
-        toast.success('Image uploaded');
-      } else {
-        toast.error(data.message || 'Upload failed');
-      }
-    } catch (error) {
-      toast.error('Upload failed');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleSave = async (publish = false) => {
-    if (!title || !content || !category || !featuredImage) {
-      toast.error('Please fill all required fields (*) including image');
-      return;
-    }
-
-    setSaving(true);
-    try {
+      const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+      
       const res = await fetch('/api/admin/articles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title, slug, excerpt, content, category, tags,
-          status: publish ? 'published' : status,
-          isFeatured, isTrending, featuredImage,
-          metaTitle, metaDescription: metaDesc
+          ...formData,
+          tags: tagsArray
         }),
       });
 
       if (res.ok) {
-        toast.success(publish ? 'Article published' : 'Draft saved');
+        toast.success('Article created successfully!');
         router.push('/admin/articles');
       } else {
-        const data = await res.json();
-        toast.error(data.message || 'Failed to save');
+        const error = await res.json();
+        toast.error(error.message || 'Failed to create article');
       }
     } catch (error) {
-      toast.error('Operation failed');
+      toast.error('Something went wrong');
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-24">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <button onClick={() => router.back()} className="p-2 hover:bg-white dark:hover:bg-gray-800 rounded-xl transition-colors">
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <div>
-            <h1 className="text-3xl font-black uppercase tracking-tight">Create <span className="text-red-600">Story</span></h1>
-            <p className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">Compose your next big headline</p>
-          </div>
+    <div className="max-w-5xl mx-auto pb-20">
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <Link href="/admin/articles" className="inline-flex items-center gap-2 text-gray-500 hover:text-red-600 transition-colors mb-4 text-sm font-bold uppercase tracking-widest">
+            <ChevronLeft className="w-4 h-4" />
+            Back to Articles
+          </Link>
+          <h1 className="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tighter flex items-center gap-3">
+             Manual <span className="text-red-600">Creation</span>
+          </h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex gap-3">
           <button
-            onClick={() => handleSave(false)}
-            disabled={saving}
-            className="px-6 py-3 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300 rounded-2xl font-black uppercase tracking-widest text-[10px] hover:shadow-lg transition-all active:scale-95 disabled:opacity-50"
+            onClick={() => router.back()}
+            className="px-6 py-3 rounded-2xl border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 font-black uppercase tracking-widest text-xs hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save as Draft'}
+            Cancel
           </button>
           <button
-            onClick={() => handleSave(true)}
-            disabled={saving}
-            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-red-500/20 transition-all active:scale-95 disabled:opacity-50"
+            onClick={handleSubmit}
+            disabled={loading}
+            className="px-8 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase tracking-widest text-sm transition-all shadow-xl shadow-red-500/20 flex items-center gap-2 disabled:opacity-50 active:scale-95"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Publish Story'}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+            Publish Article
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Editor Main */}
-        <div className="lg:col-span-3 space-y-6">
-          <section className="bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 p-8 shadow-sm space-y-6">
-            <div className="space-y-4">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          {/* Main Content Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 p-8 shadow-xl shadow-gray-200/20 dark:shadow-none space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                <Type className="w-3 h-3 text-red-600" /> Article Title
+              </label>
               <input
-                type="text"
-                value={title}
-                onChange={(e) => { setTitle(e.target.value); setSlug(autoSlug(e.target.value)); }}
-                placeholder="Story Headline *"
-                className="w-full text-4xl font-black bg-transparent border-none outline-none placeholder:text-gray-200 dark:placeholder:text-gray-800 uppercase tracking-tighter"
+                required
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                placeholder="Enter a compelling title..."
+                className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-none rounded-2xl outline-none focus:ring-2 focus:ring-red-500 transition-all text-lg font-black tracking-tight"
               />
-              <div className="flex items-center gap-4 border-b border-gray-50 dark:border-gray-800 pb-4">
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                  <Layout className="w-3 h-3" />
-                  Slug: <span className="text-red-600 lowercase">{slug || 'auto-generated'}</span>
-                </div>
-              </div>
             </div>
 
-            <div className="space-y-6">
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Excerpt *</label>
-                <textarea
-                  value={excerpt}
-                  onChange={(e) => setExcerpt(e.target.value)}
-                  rows={2}
-                  placeholder="Enter a punchy summary of your article..."
-                  className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border-2 border-transparent focus:border-red-500 outline-none transition-all font-medium leading-relaxed"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Main Content *</label>
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={25}
-                  placeholder="Tell your story here... (Markdown supported)"
-                  className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border-2 border-transparent focus:border-red-500 outline-none transition-all font-mono text-sm leading-relaxed"
-                />
-              </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                <AlignLeft className="w-3 h-3 text-red-600" /> Content (HTML Supported)
+              </label>
+              <textarea
+                required
+                name="content"
+                value={formData.content}
+                onChange={handleChange}
+                rows={15}
+                placeholder="Write your story here... HTML tags are supported."
+                className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-none rounded-2xl outline-none focus:ring-2 focus:ring-red-500 transition-all font-medium leading-relaxed resize-none"
+              />
             </div>
-          </section>
 
-          {/* SEO Section */}
-          <section className="bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 p-8 shadow-sm">
-            <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-6">
-              <Search className="w-4 h-4 text-red-600" />
-              Search Engine Optimization
+            <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <Sparkles className="w-3 h-3 text-red-600" /> Excerpt (Optional)
+                </label>
+                <textarea
+                    name="excerpt"
+                    value={formData.excerpt}
+                    onChange={handleChange}
+                    rows={3}
+                    placeholder="Brief summary of the article..."
+                    className="w-full px-6 py-4 bg-gray-50 dark:bg-gray-800 border-none rounded-2xl outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm leading-relaxed resize-none"
+                />
+            </div>
+          </div>
+
+          {/* SEO Settings Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 p-8 shadow-xl shadow-gray-200/20 dark:shadow-none space-y-6">
+            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2 mb-4">
+               SEO & Meta Data
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Meta Title</label>
-                <input
-                  type="text"
-                  value={metaTitle}
-                  onChange={(e) => setMetaTitle(e.target.value)}
-                  placeholder="Max 60 chars"
-                  className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl focus:border-red-500 outline-none border-2 border-transparent font-bold"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Meta Description</label>
-                <input
-                  type="text"
-                  value={metaDesc}
-                  onChange={(e) => setMetaDesc(e.target.value)}
-                  placeholder="Max 160 chars"
-                  className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl focus:border-red-500 outline-none border-2 border-transparent"
-                />
-              </div>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Meta Title</label>
+                    <input
+                        name="metaTitle"
+                        value={formData.metaTitle}
+                        onChange={handleChange}
+                        className="w-full px-5 py-3.5 bg-gray-50 dark:bg-gray-800 border-none rounded-2xl outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Meta Description</label>
+                    <input
+                        name="metaDescription"
+                        value={formData.metaDescription}
+                        onChange={handleChange}
+                        className="w-full px-5 py-3.5 bg-gray-50 dark:bg-gray-800 border-none rounded-2xl outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm"
+                    />
+                </div>
             </div>
-          </section>
+          </div>
         </div>
 
-        {/* Sidebar */}
-        <aside className="space-y-6">
-          {/* Featured Image */}
-          <section className="bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">Media *</h3>
-            <div className="relative group">
-              {featuredImage ? (
-                <div className="relative aspect-video rounded-2xl overflow-hidden border-2 border-gray-100 dark:border-gray-800">
-                  <img src={featuredImage} alt="" className="w-full h-full object-cover" />
-                  <button onClick={() => setFeaturedImage('')} className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-lg shadow-lg">
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <label className="flex flex-col items-center justify-center aspect-video rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 hover:border-red-500 hover:bg-red-50/10 transition-all cursor-pointer">
-                  {uploading ? (
-                    <Loader2 className="w-8 h-8 animate-spin text-red-600" />
-                  ) : (
-                    <>
-                      <ImageIcon className="w-8 h-8 text-gray-300 mb-2" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Upload Image</span>
-                    </>
-                  )}
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                </label>
-              )}
-            </div>
-          </section>
-
-          {/* Settings */}
-          <section className="bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 p-6 shadow-sm space-y-6">
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Category *</label>
+        <div className="space-y-8">
+          {/* Status & Options Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 p-8 shadow-xl shadow-gray-200/20 dark:shadow-none space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                <Globe className="w-3 h-3 text-red-600" /> Status
+              </label>
               <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 rounded-xl outline-none font-bold text-sm appearance-none border-2 border-transparent focus:border-red-500"
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="w-full px-5 py-3.5 bg-gray-50 dark:bg-gray-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm font-bold uppercase tracking-widest"
               >
-                <option value="">Select...</option>
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-gray-50 dark:border-gray-800">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                        type="checkbox"
+                        name="isFeatured"
+                        checked={formData.isFeatured}
+                        onChange={handleChange}
+                        className="w-5 h-5 rounded-lg border-2 border-gray-200 text-red-600 focus:ring-red-500"
+                    />
+                    <span className="text-xs font-black uppercase tracking-widest text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Mark as Featured</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                        type="checkbox"
+                        name="isTrending"
+                        checked={formData.isTrending}
+                        onChange={handleChange}
+                        className="w-5 h-5 rounded-lg border-2 border-gray-200 text-red-600 focus:ring-red-500"
+                    />
+                    <span className="text-xs font-black uppercase tracking-widest text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Mark as Trending</span>
+                </label>
+            </div>
+          </div>
+
+          {/* Categorization Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 p-8 shadow-xl shadow-gray-200/20 dark:shadow-none space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                <Layout className="w-3 h-3 text-red-600" /> Category
+              </label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                className="w-full px-5 py-3.5 bg-gray-50 dark:bg-gray-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm font-bold"
+                required
+              >
+                <option value="">Select Category</option>
                 {categories.map((cat) => (
                   <option key={cat._id} value={cat._id}>{cat.name}</option>
                 ))}
               </select>
             </div>
 
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Engagement Flags</label>
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={isFeatured}
-                    onChange={(e) => setIsFeatured(e.target.checked)}
-                    className="w-5 h-5 rounded-lg border-2 border-gray-200 checked:bg-red-600 checked:border-red-600 transition-all focus:ring-0"
-                  />
-                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-red-600 uppercase tracking-widest">Featured Article</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={isTrending}
-                    onChange={(e) => setIsTrending(e.target.checked)}
-                    className="w-5 h-5 rounded-lg border-2 border-gray-200 checked:bg-red-600 checked:border-red-600 transition-all focus:ring-0"
-                  />
-                  <span className="text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-red-600 uppercase tracking-widest">Mark as Trending</span>
-                </label>
-              </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                <Tag className="w-3 h-3 text-red-600" /> Tags
+              </label>
+              <input
+                name="tags"
+                value={formData.tags}
+                onChange={handleChange}
+                placeholder="Tag1, Tag2, Tag3..."
+                className="w-full px-5 py-3.5 bg-gray-50 dark:bg-gray-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm"
+              />
+              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest ml-1 italic">Comma separated</p>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Tags</label>
-              <div className="flex gap-2 mb-3">
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  placeholder="tag name..."
-                  className="flex-1 min-w-0 px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-xs font-bold outline-none border-2 border-transparent focus:border-red-500"
-                />
-                <button onClick={addTag} className="p-2 bg-black dark:bg-white text-white dark:text-black rounded-lg transition-transform active:scale-90">
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-              {tags.map((tag: any) => (
-                <span key={typeof tag === 'string' ? tag : tag._id} className="flex items-center gap-1 pl-3 pr-2 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-[9px] font-black uppercase tracking-widest border border-gray-100 dark:border-gray-700">
-                  {typeof tag === 'string' ? tag : tag.name}
-                  <button onClick={() => setTags(tags.filter((t) => t !== tag))} className="p-0.5 hover:text-red-600">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-              </div>
+          {/* Feature Image Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-gray-100 dark:border-gray-800 p-8 shadow-xl shadow-gray-200/20 dark:shadow-none space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                <ImageIcon className="w-3 h-3 text-red-600" /> Featured Image URL
+              </label>
+              <input
+                required
+                name="featuredImage"
+                value={formData.featuredImage}
+                onChange={handleChange}
+                placeholder="https://example.com/image.jpg"
+                className="w-full px-5 py-3.5 bg-gray-50 dark:bg-gray-800 border-none rounded-xl outline-none focus:ring-2 focus:ring-red-500 transition-all text-sm"
+              />
             </div>
-          </section>
-        </aside>
-      </div>
+            {formData.featuredImage && (
+              <div className="relative aspect-video rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 group">
+                <img src={formData.featuredImage} alt="Preview" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Eye className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </form>
     </div>
   );
 }

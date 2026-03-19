@@ -1,4 +1,8 @@
 import { Metadata } from 'next';
+// Force dynamic rendering and disable caching to ensure fresh articles in production
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { Fragment } from 'react';
 import ArticleCard from '@/components/article/ArticleCard';
 import AdSlot from '@/components/ads/AdSlot';
@@ -16,8 +20,6 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     description: q ? `Search results for "${q}" on NewsSphere` : 'Search NewsSphere',
   };
 }
-
-export const revalidate = 30;
 
 export default async function SearchPage({ searchParams }: Props) {
   const { q = '', page: pageStr } = await searchParams;

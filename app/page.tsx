@@ -17,8 +17,9 @@ export const metadata: Metadata = {
   description: 'Your premier source for breaking news, technology, business, sports, health, and more.',
 };
 
-// Revalidate every 60 seconds
-export const revalidate = 60;
+// Force dynamic rendering and disable caching to ensure fresh articles in production
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function HomePage() {
   const [featured, trending, { articles: latest }] = await Promise.all([
@@ -29,10 +30,10 @@ export default async function HomePage() {
 
   // Fetch category articles in parallel
   const categoryData = await Promise.all(
-    CATEGORIES.slice(0, 4).map(async (cat) => ({
-      cat,
-      articles: await getArticlesByCategory(cat.slug, 4),
-    }))
+    CATEGORIES.slice(0, 4).map(async (cat) => {
+      const { articles } = await getArticlesByCategory(cat.slug, 4);
+      return { cat, articles };
+    })
   );
 
   return (

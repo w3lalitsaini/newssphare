@@ -34,6 +34,10 @@ export function calculateReadingTime(content: string): number {
   return Math.max(1, Math.ceil(words / wordsPerMinute));
 }
 
+export function jsonify<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj));
+}
+
 export const CATEGORIES = [
   { name: 'Technology', slug: 'technology', color: '#3B82F6', icon: '💻' },
   { name: 'Business', slug: 'business', color: '#10B981', icon: '📈' },

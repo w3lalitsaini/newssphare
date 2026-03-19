@@ -1,4 +1,8 @@
 import { Metadata } from 'next';
+// Force dynamic rendering and disable caching to ensure fresh articles in production
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { Fragment } from 'react';
 import ArticleCard from '@/components/article/ArticleCard';
 import AdSlot from '@/components/ads/AdSlot';
@@ -10,8 +14,6 @@ export const metadata: Metadata = {
   title: 'Latest News & Stories | NewsSphere',
   description: 'Stay updated with the most recent articles and breaking news from around the world.',
 };
-
-export const revalidate = 60;
 
 interface Props {
   searchParams: Promise<{ page?: string }>;
