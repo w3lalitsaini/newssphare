@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { Fragment } from 'react';
 import ArticleCard from '@/components/article/ArticleCard';
 import AdSlot from '@/components/ads/AdSlot';
 import { Zap, ChevronRight } from 'lucide-react';
@@ -43,8 +44,15 @@ export default async function LatestPage({ searchParams }: Props) {
       {articles.length > 0 ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8">
-            {articles.map((article: any) => (
-              <ArticleCard key={article._id.toString()} article={article} />
+            {articles.map((article: any, i: number) => (
+              <Fragment key={article._id.toString()}>
+                <ArticleCard article={article} />
+                {(i + 1) % 4 === 0 && (i + 1) < articles.length && (
+                  <div className="col-span-full flex justify-center my-4">
+                    <AdSlot placement="between-cards" />
+                  </div>
+                )}
+              </Fragment>
             ))}
           </div>
 

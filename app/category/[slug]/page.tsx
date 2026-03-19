@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { Fragment } from 'react';
 import ArticleCard from '@/components/article/ArticleCard';
 import AdSlot from '@/components/ads/AdSlot';
 import { CATEGORIES } from '@/lib/utils';
@@ -84,8 +85,19 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8">
             {articles.map((article: any, i: number) => (
-              <ArticleCard key={article._id.toString()} article={article} />
+              <Fragment key={article._id.toString()}>
+                <ArticleCard article={article} />
+                {(i + 1) % 4 === 0 && (i + 1) < articles.length && (
+                  <div className="col-span-full flex justify-center my-4">
+                    <AdSlot placement="between-cards" />
+                  </div>
+                )}
+              </Fragment>
             ))}
+          </div>
+
+          <div className="flex justify-center mb-8">
+            <AdSlot placement="between-cards" />
           </div>
 
           {totalPages > 1 && (

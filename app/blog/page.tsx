@@ -10,6 +10,7 @@ import {
   Newspaper, TrendingUp, Filter, ChevronRight, 
   ArrowRight
 } from 'lucide-react';
+import { Fragment } from 'react';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
@@ -55,7 +56,12 @@ export default async function BlogPage({
       </div>
 
       <div className="container mx-auto px-4 py-12">
-        <div className="flex flex-col lg:flex-row gap-12">
+          {/* Top Banner Ad */}
+          <div className="flex justify-center mb-8">
+            <AdSlot placement="top-banner" />
+          </div>
+
+          <div className="flex flex-col lg:flex-row gap-12">
           {/* Main Content */}
           <div className="lg:flex-1 space-y-12">
             {/* Filters Bar */}
@@ -99,14 +105,14 @@ export default async function BlogPage({
             {/* Article Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {articles.map((article: any, idx: number) => (
-                <div key={article._id.toString()}>
+                <Fragment key={article._id.toString()}>
                   <ArticleCard article={article} />
-                  {(idx + 1) === 4 && (
+                  {(idx + 1) % 4 === 0 && (idx + 1) < articles.length && (
                     <div className="md:col-span-2 mt-8">
                       <AdSlot placement="between-cards" />
                     </div>
                   )}
-                </div>
+                </Fragment>
               ))}
             </div>
 

@@ -18,7 +18,18 @@ const adSizes: Record<AdSlotProps['placement'], { width: string; height: string;
 
 export default function AdSlot({ placement, className = '', style }: AdSlotProps) {
   const adRef = useRef<HTMLDivElement>(null);
-  const clientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+  const clientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
+  
+  // Map placements to specific slot IDs from env
+  const getSlotId = (p: string) => {
+    switch(p) {
+      case 'in-article': return process.env.NEXT_PUBLIC_AD_SLOT_IN_ARTICLE || process.env.NEXT_PUBLIC_AD_SLOT_AUTO;
+      case 'top-banner': return process.env.NEXT_PUBLIC_AD_SLOT_POSTER || process.env.NEXT_PUBLIC_AD_SLOT_AUTO;
+      default: return process.env.NEXT_PUBLIC_AD_SLOT_AUTO;
+    }
+  };
+
+  const slotId = getSlotId(placement);
   const size = adSizes[placement];
 
   useEffect(() => {
@@ -26,18 +37,20 @@ export default function AdSlot({ placement, className = '', style }: AdSlotProps
     if (clientId && typeof window !== 'undefined') {
       try {
         ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
-      } catch (e) {}
+      } catch (e) {
+        console.error("AdSense error:", e);
+      }
     }
-  }, []);
+  }, [clientId, slotId]);
 
   if (clientId) {
     return (
-      <div className={`ad-container ${className}`} style={style}>
+      <div className={`ad-container overflow-hidden w-full flex justify-center ${className}`} style={style}>
         <ins
           className="adsbygoogle"
-          style={{ display: 'block', ...style }}
+          style={{ display: 'block', width: '100%', ...style }}
           data-ad-client={clientId}
-          data-ad-slot={`placement-${placement}`}
+          data-ad-slot={slotId}
           data-ad-format="auto"
           data-full-width-responsive="true"
         />
